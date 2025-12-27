@@ -66,4 +66,7 @@ export enum ToolErrorType {
 
   // WebSearch-specific Errors
   WEB_SEARCH_FAILED = 'web_search_failed',
+
+  // Skill-specific Errors
+  SKILL_NOT_FOUND = 'skill_not_found',
 }

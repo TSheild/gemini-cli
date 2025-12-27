@@ -13,6 +13,8 @@ import {
 } from '../core/contentGenerator.js';
 import { PromptRegistry } from '../prompts/prompt-registry.js';
 import { ToolRegistry } from '../tools/tool-registry.js';
+import { SkillRegistry } from '../skills/skill-registry.js';
+import { SkillLoader } from '../skills/skill-loader.js';
 import { LSTool } from '../tools/ls.js';
 import { ReadFileTool } from '../tools/read-file.js';
 import { GrepTool } from '../tools/grep.js';
@@ -25,6 +27,7 @@ import { WebFetchTool } from '../tools/web-fetch.js';
 import { ReadManyFilesTool } from '../tools/read-many-files.js';
 import { MemoryTool, setGeminiMdFilename } from '../tools/memoryTool.js';
 import { WebSearchTool } from '../tools/web-search.js';
+import { SkillTool } from '../tools/skill.js';
 import { GeminiClient } from '../core/client.js';
 import { FileDiscoveryService } from '../services/fileDiscoveryService.js';
 import { GitService } from '../services/gitService.js';
@@ -214,6 +217,7 @@ export interface ConfigParameters {
 export class Config {
   private toolRegistry!: ToolRegistry;
   private promptRegistry!: PromptRegistry;
+  private skillRegistry!: SkillRegistry;
   private readonly sessionId: string;
   private fileSystemService: FileSystemService;
   private contentGeneratorConfig!: ContentGeneratorConfig;
@@ -385,8 +389,34 @@ export class Config {
       await this.getGitService();
     }
     this.promptRegistry = new PromptRegistry();
+    this.skillRegistry = await this.createSkillRegistry();
     this.toolRegistry = await this.createToolRegistry();
     logCliConfiguration(this, new StartSessionEvent(this, this.toolRegistry));
+  }
+
+  /**
+   * Creates and initializes the skill registry.
+   * Loads skills from user, project, and extension directories.
+   */
+  private async createSkillRegistry(): Promise<SkillRegistry> {
+    const registry = new SkillRegistry();
+
+    // Build extension skills directories
+    const extensionSkillsDirs = this._extensions
+      .filter((ext) => ext.isActive)
+      .map((ext) => ({
+        path: path.join(ext.path, 'skills'),
+        extensionName: ext.name,
+      }));
+
+    const loader = new SkillLoader(
+      Storage.getUserSkillsDir(),
+      this.storage.getProjectSkillsDir(),
+      extensionSkillsDirs,
+    );
+
+    await loader.loadSkills(registry);
+    return registry;
   }
 
   async refreshAuth(authMethod: AuthType) {
@@ -510,6 +540,10 @@ export class Config {
 
   getPromptRegistry(): PromptRegistry {
     return this.promptRegistry;
+  }
+
+  getSkillRegistry(): SkillRegistry {
+    return this.skillRegistry;
   }
 
   getDebugMode(): boolean {
@@ -858,6 +892,11 @@ export class Config {
     registerCoreTool(ShellTool, this);
     registerCoreTool(MemoryTool);
     registerCoreTool(WebSearchTool, this);
+
+    // Register the Skill tool if skills are available
+    if (this.skillRegistry && this.skillRegistry.size() > 0) {
+      registerCoreTool(SkillTool, this.skillRegistry);
+    }
 
     await registry.discoverAllTools();
     return registry;

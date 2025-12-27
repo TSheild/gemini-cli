@@ -88,6 +88,7 @@ export * from './tools/web-search.js';
 export * from './tools/read-many-files.js';
 export * from './tools/mcp-client.js';
 export * from './tools/mcp-tool.js';
+export * from './tools/skill.js';
 
 // MCP OAuth
 export { MCPOAuthProvider } from './mcp/oauth-provider.js';
@@ -108,3 +109,6 @@ export * from './telemetry/index.js';
 export { sessionId } from './utils/session.js';
 export * from './utils/browser.js';
 export { Storage } from './config/storage.js';
+
+// Export skills
+export * from './skills/index.js';

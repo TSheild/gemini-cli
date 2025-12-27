@@ -19,7 +19,7 @@ import process from 'node:process';
 import { isGitRepository } from '../utils/gitUtils.js';
 import { MemoryTool, GEMINI_CONFIG_DIR } from '../tools/memoryTool.js';
 
-export function getCoreSystemPrompt(userMemory?: string): string {
+export function getCoreSystemPrompt(userMemory?: string, skillsSummary?: string): string {
   // if GEMINI_SYSTEM_MD is set (and not 0|false), override system prompt from file
   // default path is .gemini/system.md but can be modified via custom path in GEMINI_SYSTEM_MD
   let systemMdEnabled = false;
@@ -292,7 +292,12 @@ Your core function is efficient and safe assistance. Balance extreme conciseness
       ? `\n\n---\n\n${userMemory.trim()}`
       : '';
 
-  return `${basePrompt}${memorySuffix}`;
+  const skillsSuffix =
+    skillsSummary && skillsSummary.trim().length > 0
+      ? `\n\n---\n\n${skillsSummary.trim()}`
+      : '';
+
+  return `${basePrompt}${memorySuffix}${skillsSuffix}`;
 }
 
 /**

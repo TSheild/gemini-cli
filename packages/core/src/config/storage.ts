@@ -48,6 +48,10 @@ export class Storage {
     return path.join(Storage.getGlobalGeminiDir(), 'commands');
   }
 
+  static getUserSkillsDir(): string {
+    return path.join(Storage.getGlobalGeminiDir(), 'skills');
+  }
+
   static getGlobalMemoryFilePath(): string {
     return path.join(Storage.getGlobalGeminiDir(), 'memory.md');
   }
@@ -94,6 +98,10 @@ export class Storage {
 
   getProjectCommandsDir(): string {
     return path.join(this.getGeminiDir(), 'commands');
+  }
+
+  getProjectSkillsDir(): string {
+    return path.join(this.getGeminiDir(), 'skills');
   }
 
   getProjectTempCheckpointsDir(): string {
