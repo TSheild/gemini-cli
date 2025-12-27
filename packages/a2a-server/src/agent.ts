@@ -21,6 +21,7 @@ import type {
   ToolCallRequestInfo,
   ServerGeminiToolCallRequestEvent,
   Config,
+  DiscoveredSkill,
 } from '@google/gemini-cli-core';
 import { GeminiEventType } from '@google/gemini-cli-core';
 import { v4 as uuidv4 } from 'uuid';
@@ -36,6 +37,64 @@ import type { PersistedStateMetadata } from './metadata_types.js';
 import { getPersistedState, setPersistedState } from './metadata_types.js';
 
 const requestStorage = new AsyncLocalStorage<{ req: express.Request }>();
+
+/**
+ * Converts a DiscoveredSkill from the SkillRegistry to the A2A SDK skill format.
+ */
+function convertSkillToA2AFormat(skill: DiscoveredSkill): {
+  id: string;
+  name: string;
+  description: string;
+  tags?: string[];
+  examples?: string[];
+  inputModes?: string[];
+  outputModes?: string[];
+} {
+  return {
+    id: skill.name.replace(/[^a-zA-Z0-9_-]/g, '_'),
+    name: skill.name,
+    description: skill.description,
+    tags: skill.tags,
+    examples: skill.examples,
+    inputModes: skill.inputModes || ['text'],
+    outputModes: skill.outputModes || ['text'],
+  };
+}
+
+/**
+ * Updates the agent card with skills from the config's SkillRegistry.
+ */
+function updateAgentCardSkills(config: Config): void {
+  const skillRegistry = config.getSkillRegistry();
+  const discoveredSkills = skillRegistry.getAllSkills();
+
+  // Start with the default code generation skill
+  const skills = [
+    {
+      id: 'code_generation',
+      name: 'Code Generation',
+      description:
+        'Generates code snippets or complete files based on user requests, streaming the results.',
+      tags: ['code', 'development', 'programming'],
+      examples: [
+        'Write a python function to calculate fibonacci numbers.',
+        'Create an HTML file with a basic button that alerts "Hello!" when clicked.',
+      ],
+      inputModes: ['text'],
+      outputModes: ['text'],
+    },
+  ];
+
+  // Add discovered skills
+  for (const skill of discoveredSkills) {
+    skills.push(convertSkillToA2AFormat(skill));
+  }
+
+  coderAgentCard.skills = skills;
+  logger.info(
+    `[CoderAgentExecutor] Agent card updated with ${discoveredSkills.length} discovered skills.`,
+  );
+}
 
 /**
  * Provides a wrapper for Task. Passes data from Task to SDKTask.
@@ -133,7 +192,12 @@ class CoderAgentExecutor implements AgentExecutor {
     loadEnvironment(); // Will override any global env with workspace envs
     const settings = loadSettings(workspaceRoot);
     const extensions = loadExtensions(workspaceRoot);
-    return await loadConfig(settings, extensions, taskId);
+    const config = await loadConfig(settings, extensions, taskId);
+
+    // Update agent card with discovered skills from this config
+    updateAgentCardSkills(config);
+
+    return config;
   }
 
   /**

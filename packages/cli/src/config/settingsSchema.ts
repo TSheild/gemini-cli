@@ -774,6 +774,37 @@ export const SETTINGS_SCHEMA = {
       },
     },
   },
+
+  skills: {
+    type: 'object',
+    label: 'Skills',
+    category: 'Skills',
+    requiresRestart: false,
+    default: {},
+    description: 'Settings for agent skills.',
+    showInDialog: false,
+    properties: {
+      enabled: {
+        type: 'array',
+        label: 'Enabled Skills',
+        category: 'Skills',
+        requiresRestart: false,
+        default: undefined as string[] | undefined,
+        description:
+          'List of skill names that are explicitly enabled. If not set, all discovered skills are enabled.',
+        showInDialog: false,
+      },
+      disabled: {
+        type: 'array',
+        label: 'Disabled Skills',
+        category: 'Skills',
+        requiresRestart: false,
+        default: [] as string[],
+        description: 'List of skill names that are explicitly disabled.',
+        showInDialog: false,
+      },
+    },
+  },
 } as const;
 
 type InferSettings<T extends SettingsSchema> = {
