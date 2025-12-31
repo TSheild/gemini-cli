@@ -4,7 +4,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import * as os from 'node:os';
 import { SkillRegistry } from './skill-registry.js';
 import { SkillLoader, getUserSkillsDir, getProjectSkillsDir } from './skill-loader.js';
 

@@ -172,6 +172,29 @@ describe('SkillRegistry', () => {
     });
   });
 
+  describe('removeSkill', () => {
+    it('should remove a specific skill', () => {
+      registry.registerSkill(createSkill('skill1'));
+      registry.registerSkill(createSkill('skill2'));
+
+      const result = registry.removeSkill('skill1');
+
+      expect(result).toBe(true);
+      expect(registry.size()).toBe(1);
+      expect(registry.hasSkill('skill1')).toBe(false);
+      expect(registry.hasSkill('skill2')).toBe(true);
+    });
+
+    it('should return false for non-existent skill', () => {
+      registry.registerSkill(createSkill('skill1'));
+
+      const result = registry.removeSkill('non-existent');
+
+      expect(result).toBe(false);
+      expect(registry.size()).toBe(1);
+    });
+  });
+
   describe('removeSkillsByExtension', () => {
     it('should remove only skills from the specified extension', () => {
       registry.registerSkill(

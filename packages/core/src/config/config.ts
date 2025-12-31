@@ -15,6 +15,7 @@ import { PromptRegistry } from '../prompts/prompt-registry.js';
 import { ToolRegistry } from '../tools/tool-registry.js';
 import { SkillRegistry } from '../skills/skill-registry.js';
 import { SkillLoader } from '../skills/skill-loader.js';
+import type { SkillsSettings } from '../skills/types.js';
 import { LSTool } from '../tools/ls.js';
 import { ReadFileTool } from '../tools/read-file.js';
 import { GrepTool } from '../tools/grep.js';
@@ -212,6 +213,7 @@ export interface ConfigParameters {
   extensionManagement?: boolean;
   enablePromptCompletion?: boolean;
   eventEmitter?: EventEmitter;
+  skills?: SkillsSettings;
 }
 
 export class Config {
@@ -286,6 +288,7 @@ export class Config {
   private readonly extensionManagement: boolean;
   private readonly enablePromptCompletion: boolean = false;
   private initialized: boolean = false;
+  private readonly skillsSettings: SkillsSettings | undefined;
   readonly storage: Storage;
   private readonly fileExclusions: FileExclusions;
   private readonly eventEmitter?: EventEmitter;
@@ -364,6 +367,7 @@ export class Config {
     this.enablePromptCompletion = params.enablePromptCompletion ?? false;
     this.fileExclusions = new FileExclusions(this);
     this.eventEmitter = params.eventEmitter;
+    this.skillsSettings = params.skills;
 
     if (params.contextFileName) {
       setGeminiMdFilename(params.contextFileName);
@@ -397,6 +401,7 @@ export class Config {
   /**
    * Creates and initializes the skill registry.
    * Loads skills from user, project, and extension directories.
+   * Applies enabled/disabled filtering from settings.
    */
   private async createSkillRegistry(): Promise<SkillRegistry> {
     const registry = new SkillRegistry();
@@ -416,6 +421,29 @@ export class Config {
     );
 
     await loader.loadSkills(registry);
+
+    // Apply enabled/disabled filtering from settings
+    if (this.skillsSettings) {
+      const { enabled, disabled } = this.skillsSettings;
+
+      // If enabled list is specified, only keep those skills
+      if (enabled && enabled.length > 0) {
+        const enabledSet = new Set(enabled);
+        for (const skill of registry.getAllSkills()) {
+          if (!enabledSet.has(skill.name)) {
+            registry.removeSkill(skill.name);
+          }
+        }
+      }
+
+      // Remove explicitly disabled skills
+      if (disabled && disabled.length > 0) {
+        for (const skillName of disabled) {
+          registry.removeSkill(skillName);
+        }
+      }
+    }
+
     return registry;
   }
 

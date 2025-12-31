@@ -120,6 +120,15 @@ export class SkillRegistry {
   }
 
   /**
+   * Removes a specific skill from the registry.
+   * @param name - The name of the skill to remove
+   * @returns true if the skill was removed, false if it didn't exist
+   */
+  removeSkill(name: string): boolean {
+    return this.skills.delete(name);
+  }
+
+  /**
    * Gets a summary of all skills for system prompt injection.
    * This provides minimal context (name + description) for skill discovery.
    */

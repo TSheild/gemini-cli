@@ -11,7 +11,7 @@ import yaml from 'yaml';
 import type { DiscoveredSkill, SkillFrontmatter } from './types.js';
 import type { SkillRegistry } from './skill-registry.js';
 
-const SKILL_FILE_NAME = 'SKILL.md';
+const SKILL_FILE_NAMES = ['SKILL.md', 'skill.md', 'Skill.md'];
 const FRONTMATTER_REGEX = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
 
 interface SkillDirectory {
@@ -95,23 +95,29 @@ export class SkillLoader {
       }
 
       const skillDir = path.join(dirPath, entry.name);
-      const skillFilePath = path.join(skillDir, SKILL_FILE_NAME);
 
-      try {
-        const skill = await this.loadSkillFromFile(
-          skillFilePath,
-          skillDir,
-          extensionName,
-        );
-        if (skill) {
-          skills.push(skill);
-        }
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-          console.error(
-            `[SkillLoader] Error loading skill from ${skillFilePath}:`,
-            error,
+      // Try each possible skill file name (case-insensitive)
+      for (const skillFileName of SKILL_FILE_NAMES) {
+        const skillFilePath = path.join(skillDir, skillFileName);
+
+        try {
+          const skill = await this.loadSkillFromFile(
+            skillFilePath,
+            skillDir,
+            extensionName,
           );
+          if (skill) {
+            skills.push(skill);
+            break; // Found the skill file, stop trying other names
+          }
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+            console.error(
+              `[SkillLoader] Error loading skill from ${skillFilePath}:`,
+              error,
+            );
+          }
+          // ENOENT means file doesn't exist, try next name
         }
       }
     }
